@@ -15,7 +15,7 @@ go-build:
     - go mod download
     - go build -o devops-shop ./cmd/api
 
-artifacts:
-  paths:
-    - devops-shop
+  artifacts:
+    paths:
+      - devops-shop
 	
