@@ -4,7 +4,7 @@ stages:
 
 go-test:
   stage: test
-  image: golang:1.25
+  image: golang:1.27
   script:
     - go version
     - go mod download
@@ -12,7 +12,7 @@ go-test:
 
 go-build:
   stage: build
-  image: golang:1.27.1
+  image: golang:1.27
   script:
     - go mod download
     - go build -o devops-shop ./cmd/api
