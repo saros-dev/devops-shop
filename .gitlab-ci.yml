@@ -6,4 +6,4 @@ test-runner:
   script:
     - echo "Hello"
     - uname -a
-    - go -version
+   
