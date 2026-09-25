@@ -1,6 +1,8 @@
 stages:
   - test
   - build
+  - docker
+
 
 go-test:
   stage: test
@@ -19,3 +21,15 @@ go-build:
   artifacts:
     paths:
       - devops-shop
+
+docker-build:
+  stage: docker 
+  image: docker:cli
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker version
+    - docker build -t devops-shop:latest .
