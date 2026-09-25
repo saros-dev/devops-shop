@@ -32,4 +32,4 @@ docker-build:
     DOCKER_TLS_CERTDIR: ""
   script:
     - docker version
-    - docker build -t devops-shop:latest .
+    - docker build -t devops-shop:1.0 .
