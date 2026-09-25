@@ -7,6 +7,8 @@ stages:
 go-test:
   stage: test
   image: golang:1.27
+  tags:
+    - docker
   script:
     - go version
     - go mod download
@@ -15,6 +17,8 @@ go-test:
 go-build:
   stage: build
   image: golang:1.27
+  tags:
+    - docker
   script:
     - go mod download
     - go build -o devops-shop ./cmd/api
