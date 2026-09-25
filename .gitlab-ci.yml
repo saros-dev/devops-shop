@@ -28,8 +28,8 @@ docker-build:
   tags:
     - docker
   services:
-    - docker:dind
-    - pull_policy: if-not-present
+    - name: docker:dind
+      pull_policy: if-not-present
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
