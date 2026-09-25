@@ -30,14 +30,14 @@ docker-build:
   stage: docker 
   image:
     name: docker:cli
-    pull_policy: if_not_present
+    pull_policy: if-not-present
   tags:
     - docker
   services:
     - name: docker:dind
       pull_policy: if-not-present
       command:
-        - "--insecure-registery=192.168.64.14:5050"
+        - "--insecure-registry=192.168.64.14:5050"
 
 
   variables:
