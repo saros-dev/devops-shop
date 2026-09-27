@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
+
+	"github.com/saros-dev/devops-shop/internal/db"
 )
 
 type User struct {
@@ -21,11 +26,6 @@ type Product struct {
 	Price float64 `json:"price"`
 }
 
-var users = []User{
-	{ID: 1, Name: "Saros", Email: "saros@example.com"},
-	{ID: 2, Name: "Alice", Email: "alice@example.com"},
-}
-
 var products = []Product{
 	{ID: 1, Name: "MacBook Pro", Price: 1999.99},
 	{ID: 2, Name: "Keyboard", Price: 99.99},
@@ -33,26 +33,37 @@ var products = []Product{
 }
 
 func main() {
+	conn, err := db.Connect()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close(context.Background())
+
+	log.Println("Connected to PostgreSQL")
+
 	r := chi.NewRouter()
 
 	r.Get("/health", healthHandler)
 
-	r.Get("/api/users", usersHandler)
-	r.Post("/api/users", createUserHandler)
+	r.Get("/api/users", func(w http.ResponseWriter, r *http.Request) {
+		usersHandler(w, r, conn)
+	})
+
+	r.Post("/api/users", func(w http.ResponseWriter, r *http.Request) {
+		createUserHandler(w, r, conn)
+	})
 
 	r.Get("/api/products", productsHandler)
-
 	r.Get("/api/products/{id}", productHandler)
 
 	r.Get("/api/orders", ordersHandler)
 
 	r.Get("/api/slow", slowHandler)
-
 	r.Get("/api/error", errorHandler)
 
 	log.Println("API listening on :8080")
 
-	err := http.ListenAndServe(":8080", r)
+	err = http.ListenAndServe(":8080", r)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -64,11 +75,19 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func usersHandler(w http.ResponseWriter, r *http.Request) {
+func usersHandler(w http.ResponseWriter, r *http.Request, conn *pgx.Conn) {
+	users, err := db.GetUsers(r.Context(), conn)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to get users",
+		})
+		return
+	}
+
 	writeJSON(w, http.StatusOK, users)
 }
 
-func createUserHandler(w http.ResponseWriter, r *http.Request) {
+func createUserHandler(w http.ResponseWriter, r *http.Request, conn *pgx.Conn) {
 	var user User
 
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -79,8 +98,37 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user.ID = len(users) + 1
-	users = append(users, user)
+	if user.Name == "" || user.Email == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "name and email are required",
+		})
+		return
+	}
+
+	dbUser, err := db.CreateUser(
+		r.Context(),
+		conn,
+		user.Name,
+		user.Email,
+	)
+
+	if err != nil {
+		if errors.Is(err, db.ErrEmailExists) {
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error": "email already exists",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "failed to create user",
+		})
+		return
+	}
+
+	user.ID = dbUser.ID
+	user.Name = dbUser.Name
+	user.Email = dbUser.Email
 
 	writeJSON(w, http.StatusCreated, user)
 }
@@ -141,5 +189,7 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
-	json.NewEncoder(w).Encode(data)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Printf("failed to encode JSON response: %v", err)
+	}
 }
