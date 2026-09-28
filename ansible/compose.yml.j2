@@ -21,6 +21,14 @@ services:
     ports:
       - "4318:4318"
 
+  jaeger:
+    image: jaegertracing/jaeger:latest
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+
+
   api:
     image: 192.168.64.14:5050/root/devops-shop:{{ image_tag }}
     ports:
