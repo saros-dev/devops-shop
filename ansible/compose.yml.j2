@@ -6,13 +6,20 @@ services:
       POSTGRES_PASSWORD: devops
       POSTGRES_DB: devops_shop
     volumes:
-    - postgres_data:/var/lib/postgresql
-    - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - postgres_data:/var/lib/postgresql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U devops -d devops_shop"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.161.0
+    volumes:
+      - ./otel-collector-config.yml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4318:4318"
 
   api:
     image: 192.168.64.14:5050/root/devops-shop:{{ image_tag }}
@@ -20,9 +27,13 @@ services:
       - "8088:8080"
     environment:
       DATABASE_URL: postgres://devops:devops@postgres:5432/devops_shop
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: devops-shop
     depends_on:
       postgres:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
 
 volumes:
   postgres_data:

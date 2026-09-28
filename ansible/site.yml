@@ -23,6 +23,14 @@
         dest: /home/saros/devops-shop/init.sql
         mode: "0644"
 
+     
+
+    - name: Copy OpenTelemetry Collector configuration
+      ansible.builtin.copy:
+        src: otel/otel-collector-config.yml
+        dest: /home/saros/devops-shop/otel-collector-config.yml
+        mode: "0644"
+
     - name: Check Docker service
       ansible.builtin.systemd:
         name: docker

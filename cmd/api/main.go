@@ -12,6 +12,12 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/saros-dev/devops-shop/internal/db"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/sdk/trace"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type User struct {
@@ -32,7 +38,33 @@ var products = []Product{
 	{ID: 3, Name: "Monitor", Price: 499.99},
 }
 
+func initTracer() (*trace.TracerProvider, error) {
+	exporter, err := otlptracehttp.New(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exporter),
+	)
+
+	otel.SetTracerProvider(tp)
+
+	return tp, nil
+}
+
 func main() {
+	tp, err := initTracer()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("failed to shutdown tracer provider: %v", err)
+		}
+	}()
+
 	conn, err := db.Connect()
 	if err != nil {
 		log.Fatal(err)
@@ -63,7 +95,9 @@ func main() {
 
 	log.Println("API listening on :8080")
 
-	err = http.ListenAndServe(":8080", r)
+	handler := otelhttp.NewHandler(r, "devops-shop")
+
+	err = http.ListenAndServe(":8080", handler)
 	if err != nil {
 		log.Fatal(err)
 	}
