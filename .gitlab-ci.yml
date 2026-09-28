@@ -2,7 +2,7 @@ stages:
   - test
   - build
   - docker
-
+  - deploy
 go-test:
   stage: test
   image: golang:1.27
@@ -53,3 +53,30 @@ docker-build:
         docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" "$CI_REGISTRY_IMAGE:1.0"
         docker push "$CI_REGISTRY_IMAGE:1.0"
       fi
+
+
+deploy:
+  stage: deploy
+  image: python:3.14-slim
+  tags:
+    - docker
+
+  before_script:
+    - apt-get update
+    - apt-get install -y --no-install-recommends openssh-client
+    - pip install --no-cache-dir ansible-core==2.20.7
+
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+
+    - printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+    - chmod 600 ~/.ssh/deploy_key
+
+    - ssh-keyscan -H 192.168.64.6 >> ~/.ssh/known_hosts
+
+  script:
+    - ansible --version
+    - ansible-playbook -i ansible/inventory.ini ansible/site.yml -e "image_tag=$CI_COMMIT_SHA" -e "ansible_ssh_private_key_file=$HOME/.ssh/deploy_key"
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
