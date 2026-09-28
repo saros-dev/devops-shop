@@ -1,6 +1,8 @@
 ---
 - name: Deploy devops-shop
   hosts: deploy
+  vars:
+    image_tag: "1.0"
 
   tasks:
     - name: Create application directory
@@ -9,9 +11,9 @@
         state: directory
         mode: "0755"
 
-    - name: Copy Docker Compose file
-      ansible.builtin.copy:
-        src: compose.yml
+    - name: Render Docker Compose file
+      ansible.builtin.template:
+        src: compose.yml.j2
         dest: /home/saros/devops-shop/compose.yml
         mode: "0644"
 
