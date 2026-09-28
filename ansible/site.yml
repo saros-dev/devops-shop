@@ -1,0 +1,41 @@
+---
+- name: Deploy devops-shop
+  hosts: deploy
+
+  tasks:
+    - name: Create application directory
+      ansible.builtin.file:
+        path: /home/saros/devops-shop
+        state: directory
+        mode: "0755"
+
+    - name: Copy Docker Compose file
+      ansible.builtin.copy:
+        src: compose.yml
+        dest: /home/saros/devops-shop/compose.yml
+        mode: "0644"
+
+    - name: Copy database initialization script
+      ansible.builtin.copy:
+        src: init.sql
+        dest: /home/saros/devops-shop/init.sql
+        mode: "0644"
+
+    - name: Check Docker service
+      ansible.builtin.systemd:
+        name: docker
+      register: docker_status
+
+    - name: Show Docker status
+      ansible.builtin.debug:
+        msg: "Docker is {{ docker_status.status.ActiveState }}"
+
+    - name: Pull application image
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: /home/saros/devops-shop
+
+    - name: Start application
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: /home/saros/devops-shop

@@ -78,6 +78,8 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 func usersHandler(w http.ResponseWriter, r *http.Request, conn *pgx.Conn) {
 	users, err := db.GetUsers(r.Context(), conn)
 	if err != nil {
+		log.Printf("GetUsers failed: %v", err)
+
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "failed to get users",
 		})
