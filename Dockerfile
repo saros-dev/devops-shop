@@ -1,4 +1,4 @@
-FROM golang:1.27.1 AS builder
+FROM 192.168.64.14:5050/root/devops-shop/golang:1.27.1 AS builder
 
 WORKDIR /app
 
