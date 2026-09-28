@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -240,26 +241,25 @@ func productsHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func productHandler(w http.ResponseWriter, r *http.Request) {
-
-	id := chi.URLParam(r, "id")
-
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid product id",
+		})
+		return
+	}
 
 	for _, product := range products {
-
-		if string(rune(product.ID+'0')) == id {
-
+		if product.ID == id {
 			writeJSON(w, http.StatusOK, product)
-
 			return
 		}
 	}
-
 
 	writeJSON(w, http.StatusNotFound, map[string]string{
 		"error": "product not found",
 	})
 }
-
 
 
 func ordersHandler(w http.ResponseWriter, r *http.Request) {
