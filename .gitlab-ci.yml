@@ -69,9 +69,10 @@ deploy:
     - mkdir -p "$HOME/.ssh"
     - chmod 700 "$HOME/.ssh"
 
-    - printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/deploy_key"
+    - printf '%s' "$SSH_PRIVATE_KEY_B64" | base64 -d > "$HOME/.ssh/deploy_key"
     - chmod 600 "$HOME/.ssh/deploy_key"
 
+    - ssh-keygen -y -f "$HOME/.ssh/deploy_key" > /dev/null
     - ssh-keyscan -H 192.168.64.6 >> "$HOME/.ssh/known_hosts"
 
   script:
