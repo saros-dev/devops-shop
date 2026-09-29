@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -104,6 +105,7 @@ func main() {
 	// Products
 	r.Get("/api/products", productsHandler)
 
+	r.Get("/api/products/search", productSearchHandler)
 	r.Get("/api/products/{id}", productHandler)
 
 
@@ -259,6 +261,35 @@ func productHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusNotFound, map[string]string{
 		"error": "product not found",
 	})
+}
+
+
+func productSearchHandler(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+
+	if query == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "query parameter q is required",
+		})
+		return
+	}
+
+	var results []Product
+
+	for _, product := range products {
+		if strings.Contains(
+			strings.ToLower(product.Name),
+			strings.ToLower(query),
+		) {
+			results = append(results, product)
+		}
+	}
+
+	if results == nil {
+		results = []Product{}
+	}
+
+	writeJSON(w, http.StatusOK, results)
 }
 
 
