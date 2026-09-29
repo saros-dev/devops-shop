@@ -55,6 +55,38 @@ docker-build:
         docker push "$CI_REGISTRY_IMAGE:1.0"
       fi
 
+
+
+frontend-docker-build:
+  stage: docker
+  image:
+    name: docker:cli
+    pull_policy: if-not-present
+  tags:
+    - docker
+  services:
+    - name: docker:dind
+      pull_policy: if-not-present
+      command:
+        - "--insecure-registry=192.168.64.14:5050"
+        - "--ipv6=false"
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    BUILDX_NO_DEFAULT_ATTESTATIONS: "1"
+  resource_group: docker-push-$CI_REGISTRY_IMAGE-frontend
+  script:
+    - docker version
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker build -t "$CI_REGISTRY_IMAGE-frontend:$CI_COMMIT_SHA" ./frontend
+    - docker push "$CI_REGISTRY_IMAGE-frontend:$CI_COMMIT_SHA"
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
+        docker tag "$CI_REGISTRY_IMAGE-frontend:$CI_COMMIT_SHA" "$CI_REGISTRY_IMAGE-frontend:1.0"
+        docker push "$CI_REGISTRY_IMAGE-frontend:1.0"
+      fi
+
+
 deploy:
   stage: deploy
   image: python:3.14-slim
