@@ -43,7 +43,7 @@ services:
   frontend:
     image: 192.168.64.14:5050/root/devops-shop/frontend:{{ image_tag }}
     ports:
-      - "80:80"
+      - "8099:80"
     depends_on:
       - api
 
