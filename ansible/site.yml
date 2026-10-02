@@ -31,6 +31,36 @@
         dest: /home/saros/devops-shop/otel-collector-config.yml
         mode: "0644"
 
+    - name: Create Tempo configuration directory
+      ansible.builtin.file:
+        path: /home/saros/devops-shop
+        state: directory
+        mode: "0755"
+
+    - name: Copy Tempo configuration
+      ansible.builtin.copy:
+        src: tempo/tempo.yml
+        dest: /home/saros/devops-shop/tempo.yml
+        mode: "0644"
+
+    - name: Copy Prometheus configuration
+      ansible.builtin.copy:
+        src: prometheus/prometheus.yml
+        dest: /home/saros/devops-shop/prometheus.yml
+        mode: "0644"
+
+    - name: Create Grafana provisioning directory
+      ansible.builtin.file:
+        path: /home/saros/devops-shop/grafana/provisioning/datasources
+        state: directory
+        mode: "0755"
+
+    - name: Copy Grafana datasource configuration
+      ansible.builtin.copy:
+        src: grafana/provisioning/datasources/datasources.yml
+        dest: /home/saros/devops-shop/grafana/provisioning/datasources/datasources.yml
+        mode: "0644"
+
     - name: Check Docker service
       ansible.builtin.systemd:
         name: docker
