@@ -5,8 +5,9 @@ import (
 	"errors"
 	"os"
 
-	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var ErrEmailExists = errors.New("email already exists")
@@ -14,7 +15,14 @@ var ErrEmailExists = errors.New("email already exists")
 func Connect() (*pgx.Conn, error) {
 	dsn := os.Getenv("DATABASE_URL")
 
-	return pgx.Connect(context.Background(), dsn)
+	config, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	config.Tracer = otelpgx.NewTracer()
+
+	return pgx.ConnectConfig(context.Background(), config)
 }
 
 type User struct {
