@@ -5,25 +5,100 @@ services:
       POSTGRES_USER: devops
       POSTGRES_PASSWORD: devops
       POSTGRES_DB: devops_shop
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U devops -d devops_shop"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  api:
-    image: 192.168.64.14:5050/root/devops-shop:1.0
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.161.0
+    volumes:
+      - ./otel-collector-config.yml:/etc/otelcol-contrib/config.yaml:ro
+    
+
+  jaeger:
+    image: jaegertracing/jaeger:latest
     ports:
-      - "8080:8080"
+      - "16686:16686"
+
+  tempo:
+    image: grafana/tempo:latest
+    command:
+      - "-config.file=/etc/tempo/tempo.yml"
+    volumes:
+      - ./tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "3200:3200"
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+
+  loki:
+    image: grafana/loki:latest
+    command:
+      - "-config.file=/etc/loki/loki.yml"
+    volumes:
+      - ./loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+
+  alloy:
+    image: grafana/alloy:latest
+    command:
+      - "run"
+      - "/etc/alloy/config.alloy"
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "4000:3000"
+    depends_on:
+      - prometheus
+      - tempo
+
+  api:
+    image: ${API_IMAGE:-192.168.64.14:5050/root/devops-shop:1.0}
+    ports:
+      - "8088:8080"
     environment:
       DATABASE_URL: postgres://devops:devops@postgres:5432/devops_shop
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: devops-shop
     depends_on:
       postgres:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-192.168.64.14:5050/root/devops-shop/frontend:1.0}
+    ports:
+      - "8099:80"
+    depends_on:
+      - api
 
 volumes:
   postgres_data:
+  tempo_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:

@@ -45,6 +45,27 @@ services:
       - "9090:9090"
 
 
+  loki:
+    image: grafana/loki:latest
+    command: ["-config.file=/etc/loki/loki.yml"]
+    volumes:
+      - ./loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+
+  alloy:
+    image: grafana/alloy:latest
+    command: ["run", "/etc/alloy/config.alloy"]
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+
+
+
+
   grafana:
     image: grafana/grafana:latest
     volumes:
@@ -84,3 +105,4 @@ volumes:
   tempo_data:
   prometheus_data:
   grafana_data:
+  loki_data:
