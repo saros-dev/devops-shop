@@ -3,12 +3,34 @@ receivers:
     protocols:
       http:
         endpoint: 0.0.0.0:4318
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+connectors:
+  spanmetrics:
+    dimensions:
+      - name: http.request.method
+      - name: url.path
+      - name: http.response.status_code
 
 exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
   otlp/jaeger:
     endpoint: jaeger:4317
     tls:
       insecure: true
+
+  otlp/sarosobserv:
+    endpoint: 192.168.64.1:4317
+    tls:
+      insecure: true
+
+  prometheus:
+    endpoint: 0.0.0.0:8889
 
   debug:
     verbosity: detailed
@@ -19,5 +41,14 @@ service:
       receivers:
         - otlp
       exporters:
+        - otlp/tempo
         - otlp/jaeger
+        - otlp/sarosobserv
+        - spanmetrics
         - debug
+
+    metrics/spanmetrics:
+      receivers:
+        - spanmetrics
+      exporters:
+        - prometheus
