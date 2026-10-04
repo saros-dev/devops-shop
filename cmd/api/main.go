@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/trace"
+	"github.com/saros-dev/devops-shop/internal/metrics"
 )
 
 type User struct {
@@ -63,6 +64,7 @@ func main() {
 	log.Println("Connected to PostgreSQL")
 
 	r := chi.NewRouter()
+	r.Use(metrics.Middleware)
 
 	// Health
 	r.Get("/health", healthHandler)
