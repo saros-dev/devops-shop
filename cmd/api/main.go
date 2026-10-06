@@ -19,6 +19,9 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"github.com/saros-dev/devops-shop/internal/metrics"
+
+
+
 )
 
 type User struct {
